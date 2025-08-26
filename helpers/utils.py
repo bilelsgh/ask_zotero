@@ -6,7 +6,7 @@ from clients.llmclient import AVAILABLE_MODELS, AvailableModel, LLMClient
 from clients.mistral import MistralClient
 
 
-def get_llm_client(model: AvailableModel, key: str) -> LLMClient:
+def get_llm_client(model: AvailableModel, key: str, use_rag: bool = False) -> LLMClient:
     """
     Get the LLM client to start chatting
 
@@ -20,7 +20,7 @@ def get_llm_client(model: AvailableModel, key: str) -> LLMClient:
         "MISTRAL": MistralClient,
     }
 
-    args_ = {"model_name": model.name, "key": key}
+    args_ = {"model_name": model.name, "key": key, "use_rag": use_rag}
 
     return clients[model.model_family](**args_)
 

@@ -1,28 +1,28 @@
 import os
-import sys
 from pathlib import Path
 
+import streamlit as st
 import yaml
+from dotenv import load_dotenv
 
-from helpers.utils import get_model_type_from_input
-
+# == Conf file
 HERE = Path(__file__).parent
 CONF_PATH: Path = HERE / "conf.yaml"
-
 
 if CONF_PATH.is_file():
     with open(CONF_PATH, "r") as f:
         config = yaml.safe_load(f)
 
-    try:
+# == Env var
+def set_env_vars():
+    load_dotenv()
 
-        model_name = config["llm_api"]["model_name"]
-        client_type = get_model_type_from_input(model_name)
+    os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+    os.environ["MISTRALAI_API_KEY"] = os.getenv("MISTRAL_API_KEY")
+    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
 
-        if client_type.model_family == "MISTRAL":
-            os.environ["MISTRAL_API_KEY"] = config["llm_api"]["key"]
+    st.session_state.enable_rag = False
 
-        key = os.environ["MISTRAL_API_KEY"]
 
-    except KeyError as e:
-        sys.exit(f"The parameter '{e}' was not found. Please check {CONF_PATH}.")
+if __name__ == "__main__":
+    set_env_vars()
