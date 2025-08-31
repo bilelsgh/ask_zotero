@@ -2,15 +2,15 @@
 Utils functions for the whole project
 """
 from clients.deep_seek import DeepSeekClient
-from clients.llmclient import AVAILABLE_MODELS, AvailableModel, LLMClient
+from clients.llmclient import LLMClient
 from clients.mistral import MistralClient
+from helpers.constant import AVAILABLE_MODELS, AvailableModel
 
 
-def get_llm_client(model: AvailableModel, key: str, use_rag: bool = False) -> LLMClient:
+def get_llm_client(model: AvailableModel) -> LLMClient:
     """
     Get the LLM client to start chatting
 
-    :param key: API key
     :param model: Desired model
     :return:
     """
@@ -20,7 +20,7 @@ def get_llm_client(model: AvailableModel, key: str, use_rag: bool = False) -> LL
         "MISTRAL": MistralClient,
     }
 
-    args_ = {"model_name": model.name, "key": key, "use_rag": use_rag}
+    args_ = {"model_name": model.name}
 
     return clients[model.model_family](**args_)
 

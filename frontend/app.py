@@ -5,8 +5,8 @@ sys.path.append("../ask_zotero")
 import streamlit as st
 from utils import display_chat_messages
 
-from clients.llmclient import AVAILABLE_MODELS
 from config.config import set_env_vars
+from helpers.constant import AVAILABLE_MODELS
 from helpers.rag import split_docs, web_content_loader
 from helpers.utils import get_llm_client, get_model_type_from_input
 
@@ -30,9 +30,7 @@ if (
     or st.session_state.enable_rag != enable_rag
 ):
     st.session_state.enable_rag = enable_rag
-    st.session_state.client = get_llm_client(
-        model=model_type, key=os.environ["MISTRAL_API_KEY"], use_rag=enable_rag
-    )
+    st.session_state.client = get_llm_client(model=model_type)
     if docs_url:
         splitted_docs = split_docs(docs=web_content_loader(docs_url))
         st.session_state.client.add_docs(splitted_docs)
@@ -48,7 +46,7 @@ prompt = st.chat_input("Comment puis-je t'aider ?")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    response = st.session_state.client.ask(prompt)
+    response = st.session_state.client.ask(prompt, enable_rag)
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 display_chat_messages()

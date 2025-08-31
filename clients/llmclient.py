@@ -1,84 +1,67 @@
 import sys
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from abc import ABC
+from typing import Dict
 
-from langchain import hub
-from langchain.chains.conversation.base import ConversationChain
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain_core.documents import Document
-from langgraph.graph import START, StateGraph
+from langchain_core.language_models.chat_models import BaseChatModel
+from langgraph.graph import END, START, StateGraph
 from loguru import logger
-from typing_extensions import List, TypedDict
+from typing_extensions import List
+
+from helpers.constant import State
 
 sys.path.append("..")
-from helpers.rag import vector_store
-
-
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    answer: str
+from helpers.rag import GenerateNode, RetrieveNode, vector_store
 
 
 class LLMClient(ABC):
-    def __init__(self, model_name: str, use_rag: bool = False):
+    def __init__(self, model_name: str, client: BaseChatModel):
         self.model_name = model_name
-        self.client = None
-        self.use_rag = use_rag
+        self.client = client
         self.memory = ConversationBufferMemory(
             memory_key="chat_history", input_key="input", return_messages=True
         )
 
+        self.prompts: Dict[str, PromptTemplate] = {}
+        self._init_prompts()
+
         # rag
         self.vs = vector_store()
-        self.prompt = hub.pull("rlm/rag-prompt")
         self.graph = self._build_graph()
 
-    @abstractmethod
-    def ask(self, prompt: str, context: str = "") -> str:
-        raise NotImplementedError
-
-    def _init_conversation_context(self, prompt_instruction: str):
+    def _init_prompts(self):
         """
-        Configuration of every component needed to start the conversation.
-
-        :param prompt_instruction: Custom prompt instruction for the conversation
+        Create prompts to use in the workflow
         """
 
-        if not prompt_instruction:
-            prompt_template = """
-            Here is the history of the conversation:
-            {chat_history}
+        rag_prompt_template = """
+                        Here is the history of the conversation:
+                        {chat_history}
 
-            User: {input}
-            Assistant:
-            """
-        else:
-            prompt_template = prompt_instruction
-        input_variables = ["input", "chat_history"]
+                        You may also use the following retrieved information:
+                        {context}
 
-        prompt = PromptTemplate(
-            template=prompt_template, input_variables=input_variables
+                        User: {input}
+                        Assistant:
+                        """
+        simple_conv_prompt_template = """
+                    Here is the history of the conversation:
+                    {chat_history}
+
+                    User: {input}
+                    Assistant:
+                    """
+
+        self.prompts["simple_conv"] = PromptTemplate(
+            template=simple_conv_prompt_template,
+            input_variables=["input", "chat_history"],
         )
-
-        self.conversation_chain = ConversationChain(
-            llm=self.client, memory=self.memory, prompt=prompt, verbose=True
+        self.prompts["rag"] = PromptTemplate(
+            template=rag_prompt_template,
+            input_variables=["input", "context", "chat_history"],
         )
-
-    def _retrieve(self, state: State):
-        retrieved_docs = self.vs.similarity_search(state["question"])
-        return {"context": retrieved_docs}
-
-    def _generate(self, state: State):
-        docs_content = "\n\n".join(doc.page_content for doc in state["context"])
-        messages = self.prompt.invoke(
-            {"question": state["question"], "context": docs_content}
-        )
-
-        logger.info("Calling LLM for generate step")
-        response = self.client.invoke(messages)
-        return {"answer": response.content}
 
     def _build_graph(self):
         """
@@ -91,12 +74,22 @@ class LLMClient(ABC):
         graph_builder = StateGraph(State)
 
         # add nodes with names
-        graph_builder.add_node("retrieve", self._retrieve)
-        graph_builder.add_node("generate", self._generate)
+        retrieve = RetrieveNode(self.vs)
+        generate = GenerateNode(
+            self.client, self.memory, self.prompts["simple_conv"], self.prompts["rag"]
+        )
 
-        # define edges
-        graph_builder.add_edge(START, "retrieve")
+        # Add nodes to the graph
+        graph_builder.add_node("retrieve", retrieve)
+        graph_builder.add_node("generate", generate)
+
+        def router(state: State):
+            return "retrieve" if state.get("use_rag", False) else "generate"
+
+        # Add edges
+        graph_builder.add_conditional_edges(START, router)
         graph_builder.add_edge("retrieve", "generate")
+        graph_builder.add_edge("generate", END)
 
         return graph_builder.compile()
 
@@ -104,16 +97,18 @@ class LLMClient(ABC):
         self.vs.add_documents(docs)
         logger.success(f"Added {len(docs)} documents")
 
+    def ask(self, user_input: str, use_rag: bool = False) -> str:
+        """
+        Ask something to the model.
 
-@dataclass
-class AvailableModel:
-    name: str
-    model_family: str
+        :param user_input: Prompt for the model
+        :param context: Context for the prompt
+        :param use_rag: If True, use the RAG pipeline instead of plain conversation
+        :return: Model answer
+        """
 
+        # Run RAG graph
+        logger.debug(f"Use RAG: {use_rag}")
+        result = self.graph.invoke({"input": user_input, "use_rag": use_rag})
 
-AVAILABLE_MODELS = {
-    # "deepseek-r1": AvailableModel(model_family="DEEPSEEK_R1", name="deepseek-chat"),
-    "mistral-large": AvailableModel(
-        model_family="MISTRAL", name="mistral-small-latest"
-    ),
-}
+        return result["answer"]

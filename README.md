@@ -6,6 +6,12 @@
 
 A basic application to start an LLM project.
 
+### todo
+-[ ] rendre le choix du modele as a param
+- [ ] gérer le "rag inutile"
+- [ ] rechargement inutile a chaque fois que toggle RAG -> perte historique
+-[ ] ajouter le rag par upload
+
 ### Architecture
 ![alt text](https://github.com/bilelsgh/chat_with_llm/blob/master/config/architecture.png)
 
@@ -26,6 +32,3 @@ streamlit run frontend/app.py
 ```bash
 python main.py
 ```
-
-
-
