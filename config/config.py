@@ -21,6 +21,9 @@ def set_env_vars():
     os.environ["MISTRALAI_API_KEY"] = os.getenv("MISTRAL_API_KEY")
     os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
 
+    os.environ["ZOTERO_API_KEY"] = os.getenv("ZOTERO_API_KEY")
+    os.environ["ZOTERO_USERID"] = os.getenv("ZOTERO_USERID")
+
     st.session_state.enable_rag = False
 
 

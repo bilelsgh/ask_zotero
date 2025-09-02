@@ -7,21 +7,27 @@ from utils import display_chat_messages
 
 from config.config import set_env_vars
 from helpers.constant import AVAILABLE_MODELS
-from helpers.rag import split_docs, web_content_loader
-from helpers.utils import get_llm_client, get_model_type_from_input
+from helpers.rag import pdf_to_text, split_docs, web_content_loader
+from helpers.utils import (
+    get_llm_client,
+    get_model_type_from_input,
+    zotero_files_to_text,
+)
 
 set_env_vars()
 
-# Model choice
-client_choice = st.selectbox("Chose your model", list(AVAILABLE_MODELS.keys()))
-model_type = get_model_type_from_input(client_choice)
+with st.expander("Parameters"):
+    # Model choice
+    client_choice = st.selectbox("Chose your model", list(AVAILABLE_MODELS.keys()))
+    model_type = get_model_type_from_input(client_choice)
 
-# rag
-docs_url = ""
-l1, r1 = st.columns(2)
-enable_rag = l1.toggle("Use RAG?")
-if enable_rag:
-    docs_url = r1.text_input("URL of documents")
+    # rag
+    docs = None
+    l1, r1 = st.columns(2)
+    enable_rag = l1.toggle("Use RAG?")
+    if enable_rag:
+        with st.spinner("Setting up RAG..."):
+            docs = zotero_files_to_text()
 
 # Init the client
 if (
@@ -31,17 +37,16 @@ if (
 ):
     st.session_state.enable_rag = enable_rag
     st.session_state.client = get_llm_client(model=model_type)
-    if docs_url:
-        splitted_docs = split_docs(docs=web_content_loader(docs_url))
+    if docs:
+        splitted_docs = split_docs(docs=docs)
         st.session_state.client.add_docs(splitted_docs)
     st.session_state.client_choice = client_choice
-    st.info(f"Model `{client_choice}` selected.")
 
 # Start the conversation
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-prompt = st.chat_input("Comment puis-je t'aider ?")
+prompt = st.chat_input("How can I help?")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})

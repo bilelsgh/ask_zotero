@@ -21,7 +21,7 @@ class MistralClient(LLMClient):
         """
         client = ChatMistralAI(
             model=model_name,
-            temperature=0,
+            temperature=0.3,
             max_retries=2,
         )
         super().__init__(model_name, client)

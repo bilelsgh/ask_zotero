@@ -2,3 +2,5 @@ PyYAML
 mistralai
 streamlit
 langchain
+pyzotero
+PyMuPDF

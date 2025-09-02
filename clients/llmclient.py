@@ -40,7 +40,7 @@ class LLMClient(ABC):
                         Here is the history of the conversation:
                         {chat_history}
 
-                        You may also use the following retrieved information:
+                        You may also use the following retrieved information, use it only and only if it helps you to answer to the user input, else ignore it:
                         {context}
 
                         User: {input}

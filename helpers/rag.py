@@ -1,6 +1,7 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import bs4
+import pymupdf
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.prompts import PromptTemplate
 from langchain_community.document_loaders import WebBaseLoader
@@ -14,6 +15,29 @@ from loguru import logger
 from helpers.constant import State
 
 # ========== Utils ========== #
+
+
+def pdf_to_text(data: Union[str, bytes], filetype: str) -> List[str]:
+    """
+    Transform pdf files to text
+    """
+
+    try:
+        doc = (
+            pymupdf.open(stream=data, filetype="pdf")
+            if filetype == "pdf"
+            else pymupdf.open(data)
+        )
+        full_text = ""
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            text = page.get_text()
+            full_text += text + "\n"
+
+        return full_text
+    except pymupdf.FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        return []
 
 
 def vector_store() -> InMemoryVectorStore:
