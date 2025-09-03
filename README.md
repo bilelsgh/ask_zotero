@@ -35,13 +35,3 @@ ZOTERO_USERID=""
 ```bash
 uv run streamlit run frontend/app.py
 ```
-
-### To-do
-- [ ] Make model selection a parameter
-- [x] Handle unnecessary RAG
-- [x] Connect to Zotero for files
-- [ ] Connect to Zotero for URLs
-- [ ] Integrate Mistral tokenizer
-- [ ] Add a "new conversation" button to reset memory
-- [ ] Add new LLM clients
-- [ ] Add local LLM clients
