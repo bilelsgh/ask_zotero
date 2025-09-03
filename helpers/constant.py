@@ -21,6 +21,9 @@ class AvailableModel:
 AVAILABLE_MODELS = {
     # "deepseek-r1": AvailableModel(model_family="DEEPSEEK_R1", name="deepseek-chat"),
     "mistral-large": AvailableModel(
+        model_family="MISTRAL", name="mistral-large-latest"
+    ),
+    "mistral-small": AvailableModel(
         model_family="MISTRAL", name="mistral-small-latest"
     ),
 }

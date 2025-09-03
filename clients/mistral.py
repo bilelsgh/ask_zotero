@@ -12,17 +12,20 @@ class MistralClient(LLMClient):
     def __init__(
         self,
         model_name: str,
+        temperature: float = 0.7,
+        max_retries: int = 2,
     ):
         """
         Initialize the MistralClient with API key, prompt instruction, and model name.
 
-        :param key: API key for Mistral
         :param model_name: Name of the Mistral model to use
+        :param temperature: Temperature of the Mistral model
+        :param max_retries: Number of retries
         """
         client = ChatMistralAI(
             model=model_name,
-            temperature=0.3,
-            max_retries=2,
+            temperature=temperature,
+            max_retries=max_retries,
         )
         super().__init__(model_name, client)
 

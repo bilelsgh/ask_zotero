@@ -16,27 +16,34 @@ from helpers.utils import (
 
 set_env_vars()
 
-with st.expander("Parameters"):
-    # Model choice
-    client_choice = st.selectbox("Chose your model", list(AVAILABLE_MODELS.keys()))
-    model_type = get_model_type_from_input(client_choice)
+st.title("Ask Zotero")
+
+with st.sidebar:
+    with st.expander("Settings"):
+        # Model parameters
+        client_choice = st.selectbox("Chose your model", list(AVAILABLE_MODELS.keys()))
+        model_temperature = st.slider(
+            "Temperature", min_value=0.0, max_value=1.0, value=0.3
+        )
+        model_type = get_model_type_from_input(client_choice)
+
+    # Reset
+    if (
+        st.button("Start a new conversation", type="primary")
+        and "client" in st.session_state
+    ):
+        st.session_state.client.reset()
+        st.session_state.messages = []
 
     # rag
-    docs = None
-    l1, r1 = st.columns(2)
-    enable_rag = l1.toggle("Use RAG?")
-    if enable_rag:
-        with st.spinner("Setting up RAG..."):
-            docs = zotero_files_to_text()
+    with st.spinner("Setting up RAG..."):
+        docs = zotero_files_to_text()
 
 # Init the client
-if (
-    "client" not in st.session_state
-    or st.session_state.client_choice != client_choice
-    or st.session_state.enable_rag != enable_rag
-):
-    st.session_state.enable_rag = enable_rag
-    st.session_state.client = get_llm_client(model=model_type)
+if "client" not in st.session_state or st.session_state.client_choice != client_choice:
+    st.session_state.client = get_llm_client(
+        model=model_type, **{"temperature": model_temperature}
+    )
     if docs:
         splitted_docs = split_docs(docs=docs)
         st.session_state.client.add_docs(splitted_docs)
@@ -51,7 +58,7 @@ prompt = st.chat_input("How can I help?")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    response = st.session_state.client.ask(prompt, enable_rag)
+    response = st.session_state.client.ask(prompt, True)
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 display_chat_messages()

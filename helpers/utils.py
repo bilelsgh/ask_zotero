@@ -19,7 +19,7 @@ from helpers.rag import pdf_to_text
 
 
 @st.cache_resource
-def get_llm_client(model: AvailableModel) -> LLMClient:
+def get_llm_client(model: AvailableModel, **args) -> LLMClient:
     """
     Get the LLM client to start chatting
 
@@ -32,9 +32,9 @@ def get_llm_client(model: AvailableModel) -> LLMClient:
         "MISTRAL": MistralClient,
     }
 
-    args_ = {"model_name": model.name}
+    args.update({"model_name": model.name})
 
-    return clients[model.model_family](**args_)
+    return clients[model.model_family](**args)
 
 
 def get_model_type_from_input(user_input: str) -> AvailableModel:

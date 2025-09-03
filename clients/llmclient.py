@@ -112,3 +112,13 @@ class LLMClient(ABC):
         result = self.graph.invoke({"input": user_input, "use_rag": use_rag})
 
         return result["answer"]
+
+    def reset(self):
+        """
+        Reset the conversation
+
+        todo: check if we need to do something with the graph
+        """
+
+        self.memory.clear()
+        logger.info("Conversation reset - memory cleared")
