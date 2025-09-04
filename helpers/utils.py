@@ -66,7 +66,8 @@ def get_zotero_instance(library_type: str = "user"):
         )
 
 
-def get_zotero_file(reduced: bool = False) -> Dict[str, List[str]]:
+@st.cache_data
+def zotero_files_to_text(reduced: bool = False) -> List[Document]:
     """
     Get files on Zotero instance.
     The return dict contains the url and/or absolute paths of the files.
@@ -77,31 +78,42 @@ def get_zotero_file(reduced: bool = False) -> Dict[str, List[str]]:
     logger.success("Just got Zotero instance.")
     items = zt.everything(zt.items()) if not reduced else zt.items()
 
-    files = defaultdict(list)
+    docs = []
 
     for art in items:
         data = art["data"]
         link_mode = data.get("linkMode", "")
 
+        # get file location
         if link_mode == "linked_file" and data.get("path"):
-            files["paths"].append(data["path"])
+            path = data["path"]
+            txt_pdf = pdf_to_text(path, filetype="txt")
+
+            # metadata
+            metadata = {
+                "author": ",".join(
+                    [
+                        f"{c['firstName']} {c['lastName']}"
+                        for c in data.get("creators", [])
+                        if c["creatorType"] == "author"
+                    ]
+                ),
+                "year": data.get("date", ""),
+                "title": data.get("title", ""),
+                "abstract": data.get("abstractNote", ""),
+            }
+
+            if txt_pdf:
+                docs.append(
+                    Document(
+                        page_content=txt_pdf,
+                        metadata=metadata,
+                    )
+                )
 
         elif data.get("url"):
-            files["url"].append(data["url"])
+            url = data["url"]
+            continue
 
-    return files
-
-
-@st.cache_data
-def zotero_files_to_text() -> List[Document]:
-
-    files = get_zotero_file()
-    texts = []
-    for p in files["paths"]:
-        txt_pdf = pdf_to_text(p, filetype="txt")
-        if txt_pdf:
-            texts.append(Document(page_content=txt_pdf))
-    logger.debug(files["paths"])
-    logger.success(f"Just converted {len(files['paths'])} files into text.")
-
-    return texts
+    logger.success(f"Just converted {len(docs)} files into text.")
+    return docs

@@ -4,6 +4,7 @@ import bs4
 import pymupdf
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.prompts import PromptTemplate
+from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -61,7 +62,7 @@ def web_content_loader(url: str) -> Document:
     """
 
     loader = WebBaseLoader(
-        web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent/",),
+        web_paths=("url",),
         bs_kwargs=dict(
             parse_only=bs4.SoupStrainer(
                 class_=("post-content", "post-title", "post-header")
@@ -83,7 +84,7 @@ def split_docs(
     :return:
     """
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,  # chunk size (characters)
+        chunk_size=2048,  # chunk size (characters)
         chunk_overlap=200,  # chunk overlap (characters)
         add_start_index=True,  # track index in original document
     )
@@ -141,16 +142,18 @@ class GenerateNode:
 
 
 class RetrieveNode:
-    def __init__(self, vs: InMemoryVectorStore):
+    def __init__(self, vs: InMemoryVectorStore):  # retriever: SelfQueryRetriever):
         """
         Get documents similar to the user input?
 
         :param vs: Vector store
         :return: Documents
         """
+        # self.retriever = retriever
         self.vs = vs
 
     def __call__(self, state: State) -> Dict[str, List[Document]]:
         logger.debug("Call retrieve")
+        # docs = self.retriever.get_revelant_documents(state["input"])
         docs = self.vs.similarity_search(state["input"])
         return {"context": docs}

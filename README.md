@@ -17,7 +17,7 @@ _Ask Zotero_ uses [`mistral-large-latest`](https://docs.mistral.ai/getting-start
 #### Tokenizer
 ``raise I'llDoItLaterError``
 #### Embedding
-``raise I'llDoItLaterError``
+[`mistral-embed`](https://docs.mistral.ai/capabilities/embeddings/text_embeddings/)
 
 ### Set environment variables
 1. Set your Mistral API key in `config/.env`

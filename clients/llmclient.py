@@ -1,16 +1,16 @@
 import sys
 from abc import ABC
-from typing import Dict
+from typing import Dict, List
 
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
+from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import END, START, StateGraph
 from loguru import logger
-from typing_extensions import List
 
-from helpers.constant import State
+from helpers.constant import State, metadata_field_info
 
 sys.path.append("..")
 from helpers.rag import GenerateNode, RetrieveNode, vector_store
@@ -73,8 +73,16 @@ class LLMClient(ABC):
         """
         graph_builder = StateGraph(State)
 
+        # build retriever
+        # retriever = SelfQueryRetriever.from_llm(
+        #     llm=self.client,
+        #     vectorstore=self.vs,
+        #     document_contents="Climate and technical reports",
+        #     metadata_field_info=metadata_field_info,
+        # )
+
         # add nodes with names
-        retrieve = RetrieveNode(self.vs)
+        retrieve = RetrieveNode(self.vs)  # RetrieveNode(retriever)
         generate = GenerateNode(
             self.client, self.memory, self.prompts["simple_conv"], self.prompts["rag"]
         )
